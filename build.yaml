@@ -5,3 +5,4 @@ targets:
         options:
           databases:
             app_db: lib/data/db/app_db.dart
+          test_dir: test/drift_migrations
