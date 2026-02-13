@@ -1,4 +1,5 @@
 import '../entities/course.dart';
+import '../entities/enrolled_student.dart';
 
 /// Resultado de intentar inscribirse a una clase.
 sealed class EnrollResult {
@@ -20,10 +21,15 @@ abstract class ClassesRepository {
     required String name,
     required int capacity,
     required bool enrollmentOpen,
+    DateTime? startDate,
+    DateTime? endDate,
   });
 
   Future<List<Course>> listOpenClasses();
   Future<Course> getById(int classId);
+
+  /// Lista las clases creadas por el profesor.
+  Future<List<Course>> listClassesByTeacher(int teacherUserId);
 
   /// Inscribe a un alumno en una clase. Devuelve [EnrollSuccess] o [EnrollFailure].
   Future<EnrollResult> enrollStudent({
@@ -33,4 +39,7 @@ abstract class ClassesRepository {
 
   /// Lista las clases en las que el alumno está inscrito (sin darse de baja).
   Future<List<Course>> listEnrolledByStudent(int studentUserId);
+
+  /// Lista los alumnos inscritos en una clase (para el profesor).
+  Future<List<EnrolledStudent>> listEnrolledStudentsByClass(int classId);
 }

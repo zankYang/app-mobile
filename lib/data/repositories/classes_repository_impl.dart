@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:proyecto_final/data/db/app_db.dart';
 import 'package:proyecto_final/domain/entities/course.dart';
+import 'package:proyecto_final/domain/entities/enrolled_student.dart';
 import 'package:proyecto_final/domain/repositories/classes_repository.dart';
 
 class ClassesRepositoryImpl implements ClassesRepository {
@@ -14,6 +15,8 @@ class ClassesRepositoryImpl implements ClassesRepository {
     required String name,
     required int capacity,
     required bool enrollmentOpen,
+    DateTime? startDate,
+    DateTime? endDate,
   }) async {
     return _db.into(_db.classes).insert(
           ClassesCompanion.insert(
@@ -21,6 +24,8 @@ class ClassesRepositoryImpl implements ClassesRepository {
             name: name,
             capacity: capacity,
             enrollmentOpen: Value(enrollmentOpen),
+            startDate: Value(startDate),
+            endDate: Value(endDate),
           ),
         );
   }
@@ -41,6 +46,15 @@ class ClassesRepositoryImpl implements ClassesRepository {
         .getSingleOrNull();
     if (row == null) throw StateError('Clase no encontrada: $classId');
     return _classToCourse(row);
+  }
+
+  @override
+  Future<List<Course>> listClassesByTeacher(int teacherUserId) async {
+    final rows = await (_db.select(_db.classes)
+          ..where((c) =>
+              c.teacherUserId.equals(teacherUserId) & c.deletedAt.isNull()))
+        .get();
+    return rows.map(_classToCourse).toList();
   }
 
   Course _classToCourse(ClassesData c) {
@@ -121,5 +135,29 @@ class ClassesRepositoryImpl implements ClassesRepository {
         .map((r) => r.readTable(_db.classes))
         .map(_classToCourse)
         .toList();
+  }
+
+  @override
+  Future<List<EnrolledStudent>> listEnrolledStudentsByClass(int classId) async {
+    final query = _db.select(_db.users).join([
+      innerJoin(
+        _db.enrollments,
+        _db.enrollments.studentUserId.equalsExp(_db.users.id),
+      )
+    ])
+      ..where(_db.enrollments.classId.equals(classId) &
+          _db.enrollments.droppedAt.isNull());
+
+    final rows = await query.get();
+    return rows.map((r) {
+      final user = r.readTable(_db.users);
+      final enrollment = r.readTable(_db.enrollments);
+      return EnrolledStudent(
+        userId: user.id,
+        name: user.name,
+        lastname: user.lastname,
+        enrolledAt: enrollment.enrolledAt,
+      );
+    }).toList();
   }
 }

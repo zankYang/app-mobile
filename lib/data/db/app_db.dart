@@ -59,10 +59,28 @@ class AppDb extends _$AppDb {
       );
 }
 
+const String _dbFileName = 'app.sqlite';
+
+/// Ruta del archivo de la base de datos.
+Future<String> getDatabasePath() async {
+  final dir = await getApplicationDocumentsDirectory();
+  return p.join(dir.path, _dbFileName);
+}
+
+/// Borra el archivo de la base de datos. Llamar después de [AppDb.close()]
+/// y luego invalidar el provider para que se cree una BD nueva.
+Future<void> deleteDatabaseFile() async {
+  final path = await getDatabasePath();
+  final file = File(path);
+  if (await file.exists()) {
+    await file.delete();
+  }
+}
+
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dir = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dir.path, 'app.sqlite'));
+    final file = File(p.join(dir.path, _dbFileName));
     return NativeDatabase.createInBackground(file);
   });
 }

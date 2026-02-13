@@ -71,9 +71,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     }
 
     if (result is RegisterSuccess) {
+      final isTeacher = result.user.isTeacher;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        context.router.replace(const UnderConstructionRoute());
+        if (isTeacher) {
+          context.router.replace(const TeacherHomeRoute());
+        } else {
+          context.router.replace(const UnderConstructionRoute());
+        }
       });
     }
   }

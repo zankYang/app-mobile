@@ -59,6 +59,118 @@ class UnderConstructionRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [TeacherHomePage]
+class TeacherHomeRoute extends PageRouteInfo<void> {
+  const TeacherHomeRoute({List<PageRouteInfo>? children})
+      : super(TeacherHomeRoute.name, initialChildren: children);
+
+  static const String name = 'TeacherHomeRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const TeacherHomePage();
+    },
+  );
+}
+
+/// generated route for
+/// [CreateCoursePage]
+class CreateCourseRoute extends PageRouteInfo<void> {
+  const CreateCourseRoute({List<PageRouteInfo>? children})
+      : super(CreateCourseRoute.name, initialChildren: children);
+
+  static const String name = 'CreateCourseRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const CreateCoursePage();
+    },
+  );
+}
+
+/// generated route for
+/// [AttendancePage]
+class AttendanceRoute extends PageRouteInfo<void> {
+  const AttendanceRoute({List<PageRouteInfo>? children})
+      : super(AttendanceRoute.name, initialChildren: children);
+
+  static const String name = 'AttendanceRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const AttendancePage();
+    },
+  );
+}
+
+/// generated route for
+/// [CourseAttendancePage]
+class CourseAttendanceRoute extends PageRouteInfo<void> {
+  const CourseAttendanceRoute({List<PageRouteInfo>? children})
+      : super(CourseAttendanceRoute.name, initialChildren: children);
+
+  static const String name = 'CourseAttendanceRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const CourseAttendancePage();
+    },
+  );
+}
+
+/// generated route for
+/// [AttendanceReportListPage]
+class AttendanceReportListRoute extends PageRouteInfo<void> {
+  const AttendanceReportListRoute({List<PageRouteInfo>? children})
+      : super(AttendanceReportListRoute.name, initialChildren: children);
+
+  static const String name = 'AttendanceReportListRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const AttendanceReportListPage();
+    },
+  );
+}
+
+/// generated route for
+/// [CourseAttendanceReportPage]
+class CourseAttendanceReportRoute extends PageRouteInfo<void> {
+  const CourseAttendanceReportRoute({List<PageRouteInfo>? children})
+      : super(CourseAttendanceReportRoute.name, initialChildren: children);
+
+  static const String name = 'CourseAttendanceReportRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const CourseAttendanceReportPage();
+    },
+  );
+}
+
+/// generated route for
+/// [CourseDetailPage]
+class CourseDetailRoute extends PageRouteInfo<void> {
+  const CourseDetailRoute({List<PageRouteInfo>? children})
+      : super(CourseDetailRoute.name, initialChildren: children);
+
+  static const String name = 'CourseDetailRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const CourseDetailPage();
+    },
+  );
+}
+
+/// generated route for
 /// [ProfilePage]
 class ProfileRoute extends PageRouteInfo<void> {
   const ProfileRoute({List<PageRouteInfo>? children})

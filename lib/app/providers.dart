@@ -4,8 +4,14 @@ import 'package:proyecto_final/data/repositories/auth_repository_impl.dart';
 import 'package:proyecto_final/domain/entities/auth_user.dart';
 import 'package:proyecto_final/data/repositories/classes_repository_impl.dart';
 import 'package:proyecto_final/domain/entities/course.dart';
+import 'package:proyecto_final/domain/entities/enrolled_student.dart';
+import 'package:proyecto_final/data/repositories/attendance_repository_impl.dart';
+import 'package:proyecto_final/domain/entities/attendance_report.dart';
+import 'package:proyecto_final/domain/entities/enrollment_with_student.dart';
+import 'package:proyecto_final/domain/entities/session.dart';
 import 'package:proyecto_final/domain/repositories/auth_repository.dart';
 import 'package:proyecto_final/domain/repositories/classes_repository.dart';
+import 'package:proyecto_final/domain/repositories/attendance_repository.dart';
 
 /// Base de datos Drift (una sola instancia).
 final appDbProvider = Provider<AppDb>((ref) {
@@ -13,6 +19,17 @@ final appDbProvider = Provider<AppDb>((ref) {
   ref.onDispose(() => db.close());
   return db;
 });
+
+/// Borra el archivo de la BD y cierra sesión. La próxima vez que se use
+/// la app se creará una BD vacía. Útil para desarrollo o "empezar de cero".
+/// Uso: `await resetDatabase(ref);` y luego navegar a login si hace falta.
+Future<void> resetDatabase(WidgetRef ref) async {
+  await ref.read(appDbProvider).close();
+  await deleteDatabaseFile();
+  ref.invalidate(appDbProvider);
+  await ref.read(authStateProvider.notifier).logout();
+  ref.invalidate(authStateProvider);
+}
 
 /// Repositorio de autenticación (maestros y alumnos).
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -113,4 +130,56 @@ final enrolledCoursesProvider = FutureProvider<List<Course>>((ref) async {
   if (user == null || !user.isStudent) return [];
   final repo = ref.watch(classesRepositoryProvider);
   return repo.listEnrolledByStudent(user.id);
+});
+
+/// Cursos del profesor actual.
+final teacherCoursesProvider = FutureProvider<List<Course>>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null || !user.isTeacher) return [];
+  final repo = ref.watch(classesRepositoryProvider);
+  return repo.listClassesByTeacher(user.id);
+});
+
+/// Alumnos inscritos en una clase (por id de clase).
+final enrolledStudentsProvider =
+    FutureProvider.family<List<EnrolledStudent>, int>((ref, classId) async {
+  final repo = ref.watch(classesRepositoryProvider);
+  return repo.listEnrolledStudentsByClass(classId);
+});
+
+/// Curso seleccionado para ver detalle (profesor). Se asigna antes de push a CourseDetailRoute.
+final selectedCourseIdProvider = StateProvider<int?>((ref) => null);
+
+/// Repositorio de asistencia y sesiones.
+final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
+  final db = ref.watch(appDbProvider);
+  return AttendanceRepositoryImpl(db);
+});
+
+/// Sesiones de una clase (para asistencia).
+final sessionsByClassProvider =
+    FutureProvider.family<List<Session>, int>((ref, classId) async {
+  final repo = ref.watch(attendanceRepositoryProvider);
+  return repo.listSessionsByClass(classId);
+});
+
+/// Inscripciones con alumno para una clase (pasar asistencia).
+final enrollmentsWithStudentByClassProvider =
+    FutureProvider.family<List<EnrollmentWithStudent>, int>((ref, classId) async {
+  final repo = ref.watch(attendanceRepositoryProvider);
+  return repo.listEnrollmentsWithStudentByClass(classId);
+});
+
+/// Asistencia por sesión: enrollmentId -> status.
+final attendanceBySessionProvider =
+    FutureProvider.family<Map<int, String>, int>((ref, sessionId) async {
+  final repo = ref.watch(attendanceRepositoryProvider);
+  return repo.getAttendanceBySession(sessionId);
+});
+
+/// Reporte completo de asistencia de un curso.
+final attendanceReportProvider =
+    FutureProvider.family<AttendanceReport, int>((ref, classId) async {
+  final repo = ref.watch(attendanceRepositoryProvider);
+  return repo.getAttendanceReport(classId);
 });
