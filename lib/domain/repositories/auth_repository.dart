@@ -15,6 +15,21 @@ class LoginFailure extends LoginResult {
   const LoginFailure(this.message);
 }
 
+/// Resultado de intento de registro.
+sealed class RegisterResult {
+  const RegisterResult();
+}
+
+class RegisterSuccess extends RegisterResult {
+  final AuthUser user;
+  const RegisterSuccess(this.user);
+}
+
+class RegisterFailure extends RegisterResult {
+  final String message;
+  const RegisterFailure(this.message);
+}
+
 /// Contrato del repositorio de autenticación (maestros y alumnos).
 abstract class AuthRepository {
   /// Inicia sesión con email o username y contraseña.
@@ -23,6 +38,18 @@ abstract class AuthRepository {
   Future<LoginResult> login({
     required String identifier,
     required String password,
+  });
+
+  /// Registra un nuevo usuario (maestro o alumno).
+  /// Devuelve [RegisterSuccess] con [AuthUser] o [RegisterFailure] si email/usuario ya existe.
+  Future<RegisterResult> register({
+    required String username,
+    required String email,
+    required String password,
+    required AuthRole role,
+    required String name,
+    required String lastname,
+    String? phone,
   });
 
   /// Cierra la sesión del usuario actual.

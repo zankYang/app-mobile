@@ -53,6 +53,57 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<RegisterResult> register({
+    required String username,
+    required String email,
+    required String password,
+    required AuthRole role,
+    required String name,
+    required String lastname,
+    String? phone,
+  }) async {
+    final u = username.trim();
+    final e = email.trim();
+    if (u.isEmpty) return const RegisterFailure('El usuario es obligatorio');
+    if (e.isEmpty) return const RegisterFailure('El email es obligatorio');
+    if (password.isEmpty) return const RegisterFailure('La contraseña es obligatoria');
+    if (name.trim().isEmpty) return const RegisterFailure('El nombre es obligatorio');
+    if (lastname.trim().isEmpty) return const RegisterFailure('El apellido es obligatorio');
+
+    try {
+      final id = await _db.into(_db.users).insert(
+            UsersCompanion.insert(
+              username: u,
+              email: e,
+              password: password,
+              role: role.value,
+              name: name.trim(),
+              lastname: lastname.trim(),
+              phone: Value(phone?.trim().isEmpty ?? true ? null : phone?.trim()),
+            ),
+          );
+
+      final row = await (_db.select(_db.users)..where((u) => u.id.equals(id)))
+          .getSingle();
+      final authRole = AuthRoleX.fromString(row.role);
+      _currentUser = AuthUser(
+        id: row.id,
+        username: row.username,
+        email: row.email,
+        role: authRole,
+        name: row.name,
+        lastname: row.lastname,
+        phone: row.phone,
+      );
+      return RegisterSuccess(_currentUser!);
+    } on Exception catch (_) {
+      return const RegisterFailure(
+        'El email o el usuario ya están registrados',
+      );
+    }
+  }
+
+  @override
   Future<void> logout() async {
     _currentUser = null;
   }
