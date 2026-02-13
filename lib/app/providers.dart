@@ -1,0 +1,66 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:proyecto_final/data/db/app_db.dart';
+import 'package:proyecto_final/data/repositories/auth_repository_impl.dart';
+import 'package:proyecto_final/domain/entities/auth_user.dart';
+import 'package:proyecto_final/domain/repositories/auth_repository.dart';
+
+/// Base de datos Drift (una sola instancia).
+final appDbProvider = Provider<AppDb>((ref) {
+  final db = AppDb();
+  ref.onDispose(() => db.close());
+  return db;
+});
+
+/// Repositorio de autenticación (maestros y alumnos).
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  final db = ref.watch(appDbProvider);
+  return AuthRepositoryImpl(db);
+});
+
+/// Estado de autenticación: [AsyncData] con [AuthUser] si hay sesión, o null.
+/// Usar [AuthNotifier.login] y [AuthNotifier.logout] para cambiar.
+final authStateProvider =
+    AsyncNotifierProvider<AuthNotifier, AuthUser?>(AuthNotifier.new);
+
+class AuthNotifier extends AsyncNotifier<AuthUser?> {
+  @override
+  Future<AuthUser?> build() async {
+    return ref.read(authRepositoryProvider).currentUser;
+  }
+
+  /// Inicia sesión con email o username y contraseña.
+  /// [identifier] puede ser email o username.
+  /// Devuelve [LoginResult] (éxito o fallo con mensaje).
+  Future<LoginResult> login({
+    required String identifier,
+    required String password,
+  }) async {
+    final repo = ref.read(authRepositoryProvider);
+    final result = await repo.login(identifier: identifier, password: password);
+    if (result is LoginSuccess) {
+      state = AsyncData(result.user);
+    }
+    return result;
+  }
+
+  /// Cierra la sesión actual.
+  Future<void> logout() async {
+    await ref.read(authRepositoryProvider).logout();
+    state = const AsyncData(null);
+  }
+}
+
+/// Atajo: usuario actual (null si no hay sesión o está cargando).
+final currentUserProvider = Provider<AuthUser?>((ref) {
+  return ref.watch(authStateProvider).valueOrNull;
+});
+
+/// true si el usuario actual es maestro.
+final isTeacherProvider = Provider<bool>((ref) {
+  return ref.watch(currentUserProvider)?.isTeacher ?? false;
+});
+
+/// true si el usuario actual es alumno.
+final isStudentProvider = Provider<bool>((ref) {
+  return ref.watch(currentUserProvider)?.isStudent ?? false;
+});
