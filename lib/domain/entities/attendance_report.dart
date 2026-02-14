@@ -5,7 +5,6 @@ import 'session.dart';
 class AttendanceReport {
   final List<Session> sessions;
   final List<EnrollmentWithStudent> enrollments;
-  /// sessionId -> (enrollmentId -> status)
   final Map<int, Map<int, String>> attendanceBySession;
 
   const AttendanceReport({

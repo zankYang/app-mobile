@@ -15,16 +15,13 @@ import 'package:proyecto_final/domain/repositories/auth_repository.dart';
 import 'package:proyecto_final/domain/repositories/classes_repository.dart';
 import 'package:proyecto_final/domain/repositories/attendance_repository.dart';
 
-/// Base de datos Drift (una sola instancia).
 final appDbProvider = Provider<AppDb>((ref) {
   final db = AppDb();
   ref.onDispose(() => db.close());
   return db;
 });
 
-/// Borra el archivo de la BD y cierra sesión. La próxima vez que se use
-/// la app se creará una BD vacía. Útil para desarrollo o "empezar de cero".
-/// Uso: `await resetDatabase(ref);` y luego navegar a login si hace falta.
+
 Future<void> resetDatabase(WidgetRef ref) async {
   await ref.read(appDbProvider).close();
   await deleteDatabaseFile();
@@ -33,7 +30,6 @@ Future<void> resetDatabase(WidgetRef ref) async {
   ref.invalidate(authStateProvider);
 }
 
-/// Repositorio de autenticación (maestros y alumnos).
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final db = ref.watch(appDbProvider);
   return AuthRepositoryImpl(db);
