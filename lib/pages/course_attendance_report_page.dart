@@ -6,6 +6,8 @@ import 'package:proyecto_final/app/providers.dart';
 import 'package:proyecto_final/domain/entities/attendance_report.dart';
 import 'package:proyecto_final/domain/entities/attendance_status.dart';
 import 'package:proyecto_final/domain/entities/course.dart';
+import 'package:proyecto_final/domain/entities/enrollment_with_student.dart';
+import 'package:proyecto_final/domain/entities/student_attendance_summary.dart';
 import 'package:proyecto_final/utils/csv_export.dart';
 
 Future<void> _downloadReportCsv(
@@ -25,6 +27,7 @@ class CourseAttendanceReportPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final courseId = ref.watch(selectedCourseIdProvider);
+    final user = ref.watch(currentUserProvider);
     if (courseId == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Reporte')),
@@ -34,6 +37,7 @@ class CourseAttendanceReportPage extends ConsumerWidget {
 
     final courseAsync = ref.read(classesRepositoryProvider).getById(courseId);
     final reportAsync = ref.watch(attendanceReportProvider(courseId));
+    final isStudent = user?.isStudent ?? false;
 
     return FutureBuilder<Course>(
       future: courseAsync,
@@ -48,21 +52,63 @@ class CourseAttendanceReportPage extends ConsumerWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text('Concentrado · ${course.name}'),
+            title: Text(
+              isStudent ? 'Mi concentrado · ${course.name}' : 'Concentrado · ${course.name}',
+            ),
             actions: [
               reportAsync.when(
-                data: (report) => IconButton(
-                  icon: const Icon(Icons.download),
-                  tooltip: 'Descargar reporte CSV',
-                  onPressed: () => _downloadReportCsv(context, report, course.name),
-                ),
+                data: (report) {
+                  if (isStudent && user != null) {
+                    final myEnrollment = report.enrollments
+                        .where((e) => e.userId == user.id)
+                        .firstOrNull;
+                    if (myEnrollment != null) {
+                      final summary = _studentSummaryFromReport(
+                        report,
+                        myEnrollment,
+                        course.name,
+                      );
+                      return IconButton(
+                        icon: const Icon(Icons.download),
+                        tooltip: 'Descargar mi reporte CSV',
+                        onPressed: () => _downloadStudentCsv(context, summary, course.name),
+                      );
+                    }
+                  }
+                  return IconButton(
+                    icon: const Icon(Icons.download),
+                    tooltip: 'Descargar reporte CSV',
+                    onPressed: () => _downloadReportCsv(context, report, course.name),
+                  );
+                },
                 loading: () => const SizedBox.shrink(),
                 error: (error, stackTrace) => const SizedBox.shrink(),
               ),
             ],
           ),
           body: reportAsync.when(
-            data: (report) => _ReportContent(report: report),
+            data: (report) {
+              if (isStudent && user != null) {
+                final myEnrollment = report.enrollments
+                    .where((e) => e.userId == user.id)
+                    .firstOrNull;
+                if (myEnrollment != null) {
+                  final filteredReport = AttendanceReport(
+                    sessions: report.sessions,
+                    enrollments: [myEnrollment],
+                    attendanceBySession: report.attendanceBySession,
+                  );
+                  return _ReportContent(report: filteredReport);
+                }
+                return Center(
+                  child: Text(
+                    'No estás inscrito en este curso.',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                );
+              }
+              return _ReportContent(report: report);
+            },
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(child: Text('Error: $e')),
           ),
@@ -70,6 +116,62 @@ class CourseAttendanceReportPage extends ConsumerWidget {
       },
     );
   }
+}
+
+StudentCourseAttendanceSummary _studentSummaryFromReport(
+  AttendanceReport report,
+  EnrollmentWithStudent enrollment,
+  String courseName,
+) {
+  int present = 0, absent = 0, late = 0, justified = 0;
+  final sessionDetails = <SessionAttendanceDetail>[];
+  for (final session in report.sessions) {
+    final status = report.statusAt(session.id, enrollment.enrollmentId);
+    sessionDetails.add(SessionAttendanceDetail(
+      sessionAt: session.sessionAt,
+      status: status,
+    ));
+    switch (status) {
+      case AttendanceStatus.present:
+        present++;
+        break;
+      case AttendanceStatus.absent:
+        absent++;
+        break;
+      case AttendanceStatus.late:
+        late++;
+        break;
+      case AttendanceStatus.justified:
+        justified++;
+        break;
+      default:
+        absent++;
+    }
+  }
+  return StudentCourseAttendanceSummary(
+    course: Course(
+      id: 0,
+      teacherUserId: 0,
+      name: courseName,
+      capacity: 0,
+      enrollmentOpen: false,
+    ),
+    present: present,
+    absent: absent,
+    late: late,
+    justified: justified,
+    sessionDetails: sessionDetails,
+  );
+}
+
+Future<void> _downloadStudentCsv(
+  BuildContext context,
+  StudentCourseAttendanceSummary summary,
+  String courseName,
+) async {
+  final csv = buildStudentAttendanceCsv(summary);
+  final filename = 'mi_asistencia_${courseName.replaceAll(RegExp(r'[^\w\s-]'), '_')}.csv';
+  await shareCsv(csv, filename);
 }
 
 class _ReportContent extends StatelessWidget {

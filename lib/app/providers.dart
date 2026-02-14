@@ -176,15 +176,17 @@ final attendanceBySessionProvider =
 });
 
 /// Reporte completo de asistencia de un curso.
+/// Usa autoDispose para que se recargue al volver a la página.
 final attendanceReportProvider =
-    FutureProvider.family<AttendanceReport, int>((ref, classId) async {
+    FutureProvider.autoDispose.family<AttendanceReport, int>((ref, classId) async {
   final repo = ref.watch(attendanceRepositoryProvider);
   return repo.getAttendanceReport(classId);
 });
 
 /// Resumen de asistencia del alumno actual en sus clases inscritas.
+/// Usa autoDispose para que se recargue al volver a la página.
 final studentAttendanceSummaryProvider =
-    FutureProvider<List<StudentCourseAttendanceSummary>>((ref) async {
+    FutureProvider.autoDispose<List<StudentCourseAttendanceSummary>>((ref) async {
   final user = ref.watch(currentUserProvider);
   if (user == null || !user.isStudent) return [];
 

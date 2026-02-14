@@ -38,6 +38,7 @@ class _ChooseClassPageState extends ConsumerState<ChooseClassPage> {
       setState(() => _message = 'Te has inscrito en ${course.name}');
       ref.invalidate(enrolledCoursesProvider);
       ref.invalidate(openClassesProvider);
+      ref.invalidate(attendanceReportProvider(course.id));
     } else {
       setState(() => _message = (result as EnrollFailure).message);
     }

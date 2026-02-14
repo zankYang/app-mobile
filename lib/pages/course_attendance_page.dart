@@ -197,6 +197,7 @@ class _CourseAttendancePageState extends ConsumerState<CourseAttendancePage> {
                               status: status,
                             );
                         ref.invalidate(attendanceBySessionProvider(_selectedSessionId!));
+                        ref.invalidate(attendanceReportProvider(course.id));
                       },
                       onSave: () => _saveAttendance(ref),
                       saving: _saving,
@@ -238,6 +239,7 @@ class _CourseAttendancePageState extends ConsumerState<CourseAttendancePage> {
         .read(attendanceRepositoryProvider)
         .createSession(classId: classId, sessionAt: now);
     ref.invalidate(sessionsByClassProvider(classId));
+    ref.invalidate(attendanceReportProvider(classId));
     switch (result) {
       case CreateSessionSuccess(:final sessionId):
         setState(() => _selectedSessionId = sessionId);
@@ -256,9 +258,9 @@ class _CourseAttendancePageState extends ConsumerState<CourseAttendancePage> {
       _saving = true;
       _message = null;
     });
-    // The actual save is done in _AttendanceList when the user toggles;
-    // we could add an explicit "Guardar" that just invalidates.
+    final courseId = ref.read(selectedCourseIdProvider);
     ref.invalidate(attendanceBySessionProvider(_selectedSessionId!));
+    if (courseId != null) ref.invalidate(attendanceReportProvider(courseId));
     setState(() {
       _saving = false;
       _message = 'Asistencia actualizada';
