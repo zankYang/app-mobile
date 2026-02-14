@@ -7,7 +7,9 @@ import 'package:proyecto_final/domain/entities/course.dart';
 import 'package:proyecto_final/domain/entities/enrolled_student.dart';
 import 'package:proyecto_final/data/repositories/attendance_repository_impl.dart';
 import 'package:proyecto_final/domain/entities/attendance_report.dart';
+import 'package:proyecto_final/domain/entities/attendance_status.dart';
 import 'package:proyecto_final/domain/entities/enrollment_with_student.dart';
+import 'package:proyecto_final/domain/entities/student_attendance_summary.dart';
 import 'package:proyecto_final/domain/entities/session.dart';
 import 'package:proyecto_final/domain/repositories/auth_repository.dart';
 import 'package:proyecto_final/domain/repositories/classes_repository.dart';
@@ -182,4 +184,59 @@ final attendanceReportProvider =
     FutureProvider.family<AttendanceReport, int>((ref, classId) async {
   final repo = ref.watch(attendanceRepositoryProvider);
   return repo.getAttendanceReport(classId);
+});
+
+/// Resumen de asistencia del alumno actual en sus clases inscritas.
+final studentAttendanceSummaryProvider =
+    FutureProvider<List<StudentCourseAttendanceSummary>>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null || !user.isStudent) return [];
+
+  final courses = await ref.watch(enrolledCoursesProvider.future);
+  final repo = ref.watch(attendanceRepositoryProvider);
+
+  final list = <StudentCourseAttendanceSummary>[];
+  for (final course in courses) {
+    final report = await repo.getAttendanceReport(course.id);
+    final myEnrollment =
+        report.enrollments.where((e) => e.userId == user.id).firstOrNull;
+    if (myEnrollment == null) {
+      list.add(StudentCourseAttendanceSummary(
+        course: course,
+        present: 0,
+        absent: 0,
+        late: 0,
+        justified: 0,
+      ));
+      continue;
+    }
+    int present = 0, absent = 0, late = 0, justified = 0;
+    for (final session in report.sessions) {
+      final status = report.statusAt(session.id, myEnrollment.enrollmentId);
+      switch (status) {
+        case AttendanceStatus.present:
+          present++;
+          break;
+        case AttendanceStatus.absent:
+          absent++;
+          break;
+        case AttendanceStatus.late:
+          late++;
+          break;
+        case AttendanceStatus.justified:
+          justified++;
+          break;
+        default:
+          absent++;
+      }
+    }
+    list.add(StudentCourseAttendanceSummary(
+      course: course,
+      present: present,
+      absent: absent,
+      late: late,
+      justified: justified,
+    ));
+  }
+  return list;
 });

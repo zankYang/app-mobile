@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proyecto_final/app/providers.dart';
 import 'package:proyecto_final/domain/entities/course.dart';
+import 'package:proyecto_final/routes/app_router.dart';
 
 @RoutePage()
 class CourseDetailPage extends ConsumerWidget {
@@ -42,16 +43,31 @@ class CourseDetailPage extends ConsumerWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
                           course.name,
                           style: Theme.of(context).textTheme.titleLarge,
+                          textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 8),
-                        Text('Capacidad: ${course.capacity}'),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Capacidad: ${course.capacity} alumnos',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                          textAlign: TextAlign.center,
+                        ),
+                        if (course.startDate != null || course.endDate != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatDateRange(course),
+                            style: Theme.of(context).textTheme.bodyLarge,
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                        const SizedBox(height: 4),
                         Text(
                           'Inscripción: ${course.enrollmentOpen ? "Abierta" : "Cerrada"}',
+                          textAlign: TextAlign.center,
                         ),
                       ],
                     ),
@@ -60,9 +76,41 @@ class CourseDetailPage extends ConsumerWidget {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'Alumnos inscritos',
-                  style: Theme.of(context).textTheme.titleMedium,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () =>
+                            context.router.push(const CourseAttendanceRoute()),
+                        icon: const Icon(Icons.event_note),
+                        label: const Text(
+                          'Pasar asistencia',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => context.router
+                            .push(const CourseAttendanceReportRoute()),
+                        icon: const Icon(Icons.bar_chart),
+                        label: const Text(
+                          'Ver concentrado',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Center(
+                  child: Text(
+                    'Alumnos inscritos',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -118,4 +166,17 @@ class CourseDetailPage extends ConsumerWidget {
   }
 
   static String _formatDate(DateTime d) => '${d.day}/${d.month}/${d.year}';
+
+  static String _formatDateRange(Course course) {
+    if (course.startDate != null && course.endDate != null) {
+      return 'Fechas: ${_formatDate(course.startDate!)} — ${_formatDate(course.endDate!)}';
+    }
+    if (course.startDate != null) {
+      return 'Inicio: ${_formatDate(course.startDate!)}';
+    }
+    if (course.endDate != null) {
+      return 'Fin: ${_formatDate(course.endDate!)}';
+    }
+    return '';
+  }
 }

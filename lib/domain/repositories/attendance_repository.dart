@@ -1,4 +1,5 @@
 import '../entities/attendance_report.dart';
+import '../entities/create_session_result.dart';
 import '../entities/enrollment_with_student.dart';
 import '../entities/session.dart';
 
@@ -7,7 +8,11 @@ abstract class AttendanceRepository {
   Future<List<Session>> listSessionsByClass(int classId);
 
   /// Crea una sesión para la clase en la fecha/hora indicada.
-  Future<int> createSession({required int classId, required DateTime sessionAt});
+  /// Falla si ya existe una sesión para ese día en la clase.
+  Future<CreateSessionResult> createSession({
+    required int classId,
+    required DateTime sessionAt,
+  });
 
   /// Inscripciones del curso con nombre del alumno (para marcar asistencia).
   Future<List<EnrollmentWithStudent>> listEnrollmentsWithStudentByClass(

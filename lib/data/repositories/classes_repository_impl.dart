@@ -64,6 +64,8 @@ class ClassesRepositoryImpl implements ClassesRepository {
       name: c.name,
       capacity: c.capacity,
       enrollmentOpen: c.enrollmentOpen,
+      startDate: c.startDate,
+      endDate: c.endDate,
     );
   }
 

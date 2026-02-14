@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Estados de asistencia.
 abstract class AttendanceStatus {
   static const String present = 'present';
@@ -6,6 +8,16 @@ abstract class AttendanceStatus {
   static const String justified = 'justificado';
 
   static const List<String> all = [present, absent, late, justified];
+
+  static IconData icon(String status) {
+    return switch (status) {
+      present => Icons.check_circle,
+      absent => Icons.cancel,
+      late => Icons.schedule,
+      justified => Icons.verified_user,
+      _ => Icons.help_outline,
+    };
+  }
 
   static String label(String status) {
     return switch (status) {

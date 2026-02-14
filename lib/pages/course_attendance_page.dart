@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proyecto_final/app/providers.dart';
 import 'package:proyecto_final/domain/entities/attendance_status.dart';
+import 'package:proyecto_final/domain/entities/create_session_result.dart';
 import 'package:proyecto_final/domain/entities/course.dart';
 import 'package:proyecto_final/domain/entities/enrollment_with_student.dart';
 import 'package:proyecto_final/domain/entities/session.dart';
@@ -64,6 +65,15 @@ class _CourseAttendancePageState extends ConsumerState<CourseAttendancePage> {
                 const SizedBox(height: 8),
                 sessionsAsync.when(
                   data: (sessions) {
+                    final now = DateTime.now();
+                    final today = DateTime(now.year, now.month, now.day);
+                    final canCreateToday = course.isDateInRange(now);
+                    final hasSessionToday = sessions.any((s) {
+                      final d =
+                          DateTime(s.sessionAt.year, s.sessionAt.month, s.sessionAt.day);
+                      return d == today;
+                    });
+                    final canCreateSession = canCreateToday && !hasSessionToday;
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -86,9 +96,19 @@ class _CourseAttendancePageState extends ConsumerState<CourseAttendancePage> {
                               )),
                         const SizedBox(height: 8),
                         OutlinedButton.icon(
-                          onPressed: () => _createSession(context, ref, courseId),
+                          onPressed: canCreateSession
+                              ? () => _createSession(
+                                    context, ref, courseId, course,
+                                  )
+                              : null,
                           icon: const Icon(Icons.add),
-                          label: const Text('Nueva sesión (hoy)'),
+                          label: Text(
+                            !canCreateToday
+                                ? 'La fecha de hoy está fuera del rango del curso'
+                                : hasSessionToday
+                                    ? 'Ya existe una sesión de hoy'
+                                    : 'Nueva sesión (hoy)',
+                          ),
                         ),
                       ],
                     );
@@ -97,59 +117,15 @@ class _CourseAttendancePageState extends ConsumerState<CourseAttendancePage> {
                       const Center(child: CircularProgressIndicator()),
                   error: (e, _) => Text('Error: $e'),
                 ),
-                if (_selectedSessionId != null) ...[
-                  const SizedBox(height: 24),
-                  Text(
-                    'Alumnos',
-                    style: Theme.of(context).textTheme.titleMedium,
+                if (_selectedSessionId != null)
+                  _buildAttendanceSection(
+                    context,
+                    course,
+                    sessionsAsync.valueOrNull ?? [],
+                    ref,
+                    attendanceAsync,
+                    enrollmentsAsync,
                   ),
-                  const SizedBox(height: 8),
-                  enrollmentsAsync.when(
-                    data: (enrollments) {
-                      if (enrollments.isEmpty) {
-                        return const Card(
-                          child: Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Text(
-                              'No hay alumnos inscritos en este curso.',
-                            ),
-                          ),
-                        );
-                      }
-                      return attendanceAsync != null
-                          ? attendanceAsync.when(
-                              data: (attendanceMap) => _AttendanceList(
-                                enrollments: enrollments,
-                                initialStatus: attendanceMap,
-                                sessionId: _selectedSessionId!,
-                                onStatusChanged: (enrollmentId, status) async {
-                                  await ref
-                                      .read(attendanceRepositoryProvider)
-                                      .setAttendance(
-                                        sessionId: _selectedSessionId!,
-                                        enrollmentId: enrollmentId,
-                                        status: status,
-                                      );
-                                  ref.invalidate(attendanceBySessionProvider(
-                                      _selectedSessionId!));
-                                },
-                                onSave: () => _saveAttendance(ref),
-                                saving: _saving,
-                                message: _message,
-                              ),
-                              loading: () => const Center(
-                                  child: CircularProgressIndicator()),
-                              error: (e, _) => Text('Error: $e'),
-                            )
-                          : const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                    },
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (e, _) => Text('Error: $e'),
-                  ),
-                ],
               ],
             ),
           ),
@@ -158,14 +134,120 @@ class _CourseAttendancePageState extends ConsumerState<CourseAttendancePage> {
     );
   }
 
+  Widget _buildAttendanceSection(
+    BuildContext context,
+    Course course,
+    List<Session> sessions,
+    WidgetRef ref,
+    AsyncValue<Map<int, String>>? attendanceAsync,
+    AsyncValue<List<EnrollmentWithStudent>> enrollmentsAsync,
+  ) {
+    final selectedSession =
+        sessions.where((s) => s.id == _selectedSessionId).firstOrNull;
+    final sessionInRange = selectedSession != null &&
+        course.isDateInRange(selectedSession.sessionAt);
+
+    if (selectedSession != null && !sessionInRange) {
+      return Card(
+        color: Theme.of(context).colorScheme.errorContainer,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            'La fecha de esta sesión está fuera del rango registrado del curso. '
+            'No puedes pasar asistencia.',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onErrorContainer,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 24),
+        Text(
+          'Alumnos',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        enrollmentsAsync.when(
+          data: (enrollments) {
+            if (enrollments.isEmpty) {
+              return const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'No hay alumnos inscritos en este curso.',
+                  ),
+                ),
+              );
+            }
+            return attendanceAsync != null
+                ? attendanceAsync.when(
+                    data: (attendanceMap) => _AttendanceList(
+                      enrollments: enrollments,
+                      initialStatus: attendanceMap,
+                      sessionId: _selectedSessionId!,
+                      onStatusChanged: (enrollmentId, status) async {
+                        await ref.read(attendanceRepositoryProvider).setAttendance(
+                              sessionId: _selectedSessionId!,
+                              enrollmentId: enrollmentId,
+                              status: status,
+                            );
+                        ref.invalidate(attendanceBySessionProvider(_selectedSessionId!));
+                      },
+                      onSave: () => _saveAttendance(ref),
+                      saving: _saving,
+                      message: _message,
+                    ),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Text('Error: $e'),
+                  )
+                : const Center(child: CircularProgressIndicator());
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Text('Error: $e'),
+        ),
+      ],
+    );
+  }
+
   Future<void> _createSession(
-      BuildContext context, WidgetRef ref, int classId) async {
+    BuildContext context,
+    WidgetRef ref,
+    int classId,
+    Course course,
+  ) async {
     final now = DateTime.now();
-    final sessionId = await ref
+    if (!course.isDateInRange(now)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'La fecha de hoy está fuera del rango registrado del curso.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
+    final result = await ref
         .read(attendanceRepositoryProvider)
         .createSession(classId: classId, sessionAt: now);
     ref.invalidate(sessionsByClassProvider(classId));
-    setState(() => _selectedSessionId = sessionId);
+    switch (result) {
+      case CreateSessionSuccess(:final sessionId):
+        setState(() => _selectedSessionId = sessionId);
+        break;
+      case CreateSessionFailure(:final message):
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+        }
+        break;
+    }
   }
 
   Future<void> _saveAttendance(WidgetRef ref) async {
@@ -321,10 +403,23 @@ class _AttendanceRow extends StatelessWidget {
               spacing: 8,
               runSpacing: 4,
               children: AttendanceStatus.all.map((s) {
-                return ChoiceChip(
-                  label: Text(AttendanceStatus.label(s)),
-                  selected: status == s,
-                  onSelected: (_) => onChanged(s),
+                final isSelected = status == s;
+                final color = Color(AttendanceStatusColors.forStatus(s));
+                return Tooltip(
+                  message: AttendanceStatus.label(s),
+                  waitDuration: const Duration(milliseconds: 500),
+                  child: InkWell(
+                    onTap: () => onChanged(s),
+                    borderRadius: BorderRadius.circular(24),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Icon(
+                        AttendanceStatus.icon(s),
+                        size: 28,
+                        color: isSelected ? color : color.withValues(alpha: 0.5),
+                    ),
+                    ),
+                  ),
                 );
               }).toList(),
             ),

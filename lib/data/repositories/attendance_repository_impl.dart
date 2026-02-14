@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:proyecto_final/data/db/app_db.dart';
 import 'package:proyecto_final/domain/entities/attendance_report.dart';
+import 'package:proyecto_final/domain/entities/create_session_result.dart';
 import 'package:proyecto_final/domain/entities/enrollment_with_student.dart';
 import 'package:proyecto_final/domain/entities/session.dart';
 import 'package:proyecto_final/domain/repositories/attendance_repository.dart';
@@ -22,16 +23,28 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
   }
 
   @override
-  Future<int> createSession({
+  Future<CreateSessionResult> createSession({
     required int classId,
     required DateTime sessionAt,
   }) async {
-    return _db.into(_db.classSessions).insert(
+    final targetDate = DateTime(sessionAt.year, sessionAt.month, sessionAt.day);
+    final sessions = await listSessionsByClass(classId);
+    final alreadyExists = sessions.any((s) {
+      final d = DateTime(s.sessionAt.year, s.sessionAt.month, s.sessionAt.day);
+      return d == targetDate;
+    });
+    if (alreadyExists) {
+      return CreateSessionFailure(
+        'Ya existe una sesión registrada para este día.',
+      );
+    }
+    final id = await _db.into(_db.classSessions).insert(
           ClassSessionsCompanion.insert(
             classId: classId,
             sessionAt: sessionAt,
           ),
         );
+    return CreateSessionSuccess(id);
   }
 
   @override
