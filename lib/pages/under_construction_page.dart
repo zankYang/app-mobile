@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proyecto_final/app/providers.dart';
 import 'package:proyecto_final/domain/entities/attendance_status.dart';
+import 'package:proyecto_final/widgets/app_drawer_header.dart';
 import 'package:proyecto_final/domain/entities/student_attendance_summary.dart';
 import 'package:proyecto_final/routes/app_router.dart';
+import 'package:proyecto_final/utils/csv_export.dart';
 
 @RoutePage()
 class UnderConstructionPage extends ConsumerWidget {
@@ -97,9 +99,25 @@ class _CourseAttendanceCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              s.course.name,
-              style: Theme.of(context).textTheme.titleMedium,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    s.course.name,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.download),
+                  tooltip: 'Descargar mi reporte CSV',
+                  onPressed: () async {
+                    final csv = buildStudentAttendanceCsv(s);
+                    final filename =
+                        'mi_asistencia_${s.course.name.replaceAll(RegExp(r'[^\w\s-]'), '_')}.csv';
+                    await shareCsv(csv, filename);
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             if (s.totalSessions == 0)
@@ -211,50 +229,56 @@ class _StudentDrawer extends StatelessWidget {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
+            const AppDrawerHeader(),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              child: Column(
+                children: [
+                  AppDrawerTile(
+                    icon: Icons.person_outline,
+                    title: 'Ver perfil',
+                    subtitle: 'Tu información personal',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      parentContext.router.push(const ProfileRoute());
+                    },
+                  ),
+                  AppDrawerTile(
+                    icon: Icons.school_outlined,
+                    title: 'Elegir clase',
+                    subtitle: 'Inscribirte a nuevos cursos',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      parentContext.router.push(const ChooseClassRoute());
+                    },
+                  ),
+                  AppDrawerTile(
+                    icon: Icons.list_alt,
+                    title: 'Cursos inscritos',
+                    subtitle: 'Tus clases actuales',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      parentContext.router.push(const EnrolledCoursesRoute());
+                    },
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Divider(height: 1),
+                  ),
+                  AppDrawerTile(
+                    icon: Icons.logout,
+                    title: 'Cerrar sesión',
+                    iconColor: Theme.of(context).colorScheme.error,
+                    onTap: () async {
+                      Navigator.of(context).pop();
+                      await ref.read(authStateProvider.notifier).logout();
+                      if (parentContext.mounted) {
+                        parentContext.router.replace(const LoginRoute());
+                      }
+                    },
+                  ),
+                ],
               ),
-              child: Text(
-                'Menú',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: const Text('Ver perfil'),
-              onTap: () {
-                Navigator.of(context).pop();
-                parentContext.router.push(const ProfileRoute());
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.school_outlined),
-              title: const Text('Elegir clase'),
-              onTap: () {
-                Navigator.of(context).pop();
-                parentContext.router.push(const ChooseClassRoute());
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.list_alt),
-              title: const Text('Cursos inscritos'),
-              onTap: () {
-                Navigator.of(context).pop();
-                parentContext.router.push(const EnrolledCoursesRoute());
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Cerrar sesión'),
-              onTap: () async {
-                Navigator.of(context).pop();
-                await ref.read(authStateProvider.notifier).logout();
-                if (parentContext.mounted) {
-                  parentContext.router.replace(const LoginRoute());
-                }
-              },
             ),
           ],
         ),

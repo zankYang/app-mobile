@@ -211,8 +211,13 @@ final studentAttendanceSummaryProvider =
       continue;
     }
     int present = 0, absent = 0, late = 0, justified = 0;
+    final sessionDetails = <SessionAttendanceDetail>[];
     for (final session in report.sessions) {
       final status = report.statusAt(session.id, myEnrollment.enrollmentId);
+      sessionDetails.add(SessionAttendanceDetail(
+        sessionAt: session.sessionAt,
+        status: status,
+      ));
       switch (status) {
         case AttendanceStatus.present:
           present++;
@@ -236,6 +241,7 @@ final studentAttendanceSummaryProvider =
       absent: absent,
       late: late,
       justified: justified,
+      sessionDetails: sessionDetails,
     ));
   }
   return list;

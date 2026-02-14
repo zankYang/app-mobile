@@ -6,6 +6,17 @@ import 'package:proyecto_final/app/providers.dart';
 import 'package:proyecto_final/domain/entities/attendance_report.dart';
 import 'package:proyecto_final/domain/entities/attendance_status.dart';
 import 'package:proyecto_final/domain/entities/course.dart';
+import 'package:proyecto_final/utils/csv_export.dart';
+
+Future<void> _downloadReportCsv(
+  BuildContext context,
+  AttendanceReport report,
+  String courseName,
+) async {
+  final csv = buildTeacherAttendanceCsv(report, courseName);
+  final filename = 'asistencia_${courseName.replaceAll(RegExp(r'[^\w\s-]'), '_')}.csv';
+  await shareCsv(csv, filename);
+}
 
 @RoutePage()
 class CourseAttendanceReportPage extends ConsumerWidget {
@@ -36,7 +47,20 @@ class CourseAttendanceReportPage extends ConsumerWidget {
         final course = courseSnapshot.data!;
 
         return Scaffold(
-          appBar: AppBar(title: Text('Concentrado · ${course.name}')),
+          appBar: AppBar(
+            title: Text('Concentrado · ${course.name}'),
+            actions: [
+              reportAsync.when(
+                data: (report) => IconButton(
+                  icon: const Icon(Icons.download),
+                  tooltip: 'Descargar reporte CSV',
+                  onPressed: () => _downloadReportCsv(context, report, course.name),
+                ),
+                loading: () => const SizedBox.shrink(),
+                error: (error, stackTrace) => const SizedBox.shrink(),
+              ),
+            ],
+          ),
           body: reportAsync.when(
             data: (report) => _ReportContent(report: report),
             loading: () => const Center(child: CircularProgressIndicator()),

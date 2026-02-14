@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proyecto_final/app/providers.dart';
 import 'package:proyecto_final/domain/entities/course.dart';
 import 'package:proyecto_final/routes/app_router.dart';
+import 'package:proyecto_final/widgets/app_drawer_header.dart' show AppDrawerHeader, AppDrawerTile;
 
 @RoutePage()
 class TeacherHomePage extends ConsumerWidget {
@@ -120,49 +121,53 @@ class _TeacherDrawer extends StatelessWidget {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
+            const AppDrawerHeader(),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              child: Column(
+                children: [
+                  AppDrawerTile(
+                    icon: Icons.school_outlined,
+                    title: 'Mis cursos',
+                    subtitle: 'Ver y gestionar tus clases',
+                    onTap: () => Navigator.of(context).pop(),
+                  ),
+                  AppDrawerTile(
+                    icon: Icons.event_note,
+                    title: 'Asistencia',
+                    subtitle: 'Pasar lista',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      parentContext.router.push(const AttendanceRoute());
+                    },
+                  ),
+                  AppDrawerTile(
+                    icon: Icons.bar_chart,
+                    title: 'Reporte / Concentrado',
+                    subtitle: 'Gráficas y estadísticas',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      parentContext.router.push(const AttendanceReportListRoute());
+                    },
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Divider(height: 1),
+                  ),
+                  AppDrawerTile(
+                    icon: Icons.logout,
+                    title: 'Cerrar sesión',
+                    iconColor: Theme.of(context).colorScheme.error,
+                    onTap: () async {
+                      Navigator.of(context).pop();
+                      await ref.read(authStateProvider.notifier).logout();
+                      if (parentContext.mounted) {
+                        parentContext.router.replace(const LoginRoute());
+                      }
+                    },
+                  ),
+                ],
               ),
-              child: Text(
-                'Menú',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.school_outlined),
-              title: const Text('Mis cursos'),
-              onTap: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.event_note),
-              title: const Text('Asistencia'),
-              onTap: () {
-                Navigator.of(context).pop();
-                parentContext.router.push(const AttendanceRoute());
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.bar_chart),
-              title: const Text('Reporte / Concentrado'),
-              onTap: () {
-                Navigator.of(context).pop();
-                parentContext.router.push(const AttendanceReportListRoute());
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Cerrar sesión'),
-              onTap: () async {
-                Navigator.of(context).pop();
-                await ref.read(authStateProvider.notifier).logout();
-                if (parentContext.mounted) {
-                  parentContext.router.replace(const LoginRoute());
-                }
-              },
             ),
           ],
         ),
