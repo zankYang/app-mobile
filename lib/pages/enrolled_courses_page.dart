@@ -2,6 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proyecto_final/app/providers.dart';
+import 'package:proyecto_final/routes/app_router.dart';
 
 @RoutePage()
 class EnrolledCoursesPage extends ConsumerWidget {
@@ -51,7 +52,12 @@ class EnrolledCoursesPage extends ConsumerWidget {
                 child: ListTile(
                   leading: const Icon(Icons.school),
                   title: Text(course.name),
-                  subtitle: Text('Capacidad: ${course.capacity}'),
+                  subtitle: Text('Capacidad: ${course.capacity} · Ver concentrado'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    ref.read(selectedCourseIdProvider.notifier).state = course.id;
+                    context.router.push(const CourseAttendanceReportRoute());
+                  },
                 ),
               );
             },
