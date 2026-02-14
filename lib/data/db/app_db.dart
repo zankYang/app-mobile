@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+import 'package:drift_flutter/drift_flutter.dart';
+
+import 'database_connection_stub.dart'
+    if (dart.library.io) 'database_connection_io.dart' as db_impl;
 
 import 'tables/users.dart';
 import 'tables/classes.dart';
@@ -22,10 +22,15 @@ part 'app_db.g.dart';
   ],
 )
 class AppDb extends _$AppDb {
-  AppDb() : super(_openConnection());
+  AppDb() : super(driftDatabase(
+        name: 'app_db',
+        web: DriftWebOptions(
+          sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+          driftWorker: Uri.parse('drift_worker.js'),
+        ),
+      ));
 
   AppDb.forTesting(super.executor);
-
 
   @override
   int get schemaVersion => 1;
@@ -59,28 +64,11 @@ class AppDb extends _$AppDb {
       );
 }
 
-const String _dbFileName = 'app.sqlite';
+/// Ruta del archivo de la base de datos (solo nativo).
+Future<String> getDatabasePath() async =>
+    db_impl.getDatabasePath('app_db');
 
-/// Ruta del archivo de la base de datos.
-Future<String> getDatabasePath() async {
-  final dir = await getApplicationDocumentsDirectory();
-  return p.join(dir.path, _dbFileName);
-}
-
-/// Borra el archivo de la base de datos. Llamar después de [AppDb.close()]
+/// Borra la base de datos. Llamar después de [AppDb.close()]
 /// y luego invalidar el provider para que se cree una BD nueva.
-Future<void> deleteDatabaseFile() async {
-  final path = await getDatabasePath();
-  final file = File(path);
-  if (await file.exists()) {
-    await file.delete();
-  }
-}
-
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dir.path, _dbFileName));
-    return NativeDatabase.createInBackground(file);
-  });
-}
+Future<void> deleteDatabaseFile() async =>
+    db_impl.deleteDatabaseFile('app_db');
