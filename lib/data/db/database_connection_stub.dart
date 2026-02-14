@@ -1,5 +1,3 @@
-/// Implementación stub para web (IndexedDB, no hay path de archivo).
-
 Future<String> getDatabasePath(String name) async {
   throw UnsupportedError('getDatabasePath no disponible en web');
 }
