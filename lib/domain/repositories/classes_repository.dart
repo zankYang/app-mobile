@@ -42,4 +42,8 @@ abstract class ClassesRepository {
 
   /// Lista los alumnos inscritos en una clase (para el profesor).
   Future<List<EnrolledStudent>> listEnrolledStudentsByClass(int classId);
+
+  /// Elimina un curso (soft delete). Solo el profesor dueño puede eliminarlo.
+  /// Lanza [StateError] si el curso no existe o si no es el dueño.
+  Future<void> deleteClass({required int classId, required int teacherUserId});
 }

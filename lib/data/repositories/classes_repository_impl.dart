@@ -140,6 +140,25 @@ class ClassesRepositoryImpl implements ClassesRepository {
   }
 
   @override
+  Future<void> deleteClass({
+    required int classId,
+    required int teacherUserId,
+  }) async {
+    final row = await (_db.select(_db.classes)
+          ..where((c) => c.id.equals(classId) & c.deletedAt.isNull()))
+        .getSingleOrNull();
+    if (row == null) {
+      throw StateError('Clase no encontrada: $classId');
+    }
+    if (row.teacherUserId != teacherUserId) {
+      throw StateError('No tienes permiso para eliminar este curso');
+    }
+    await (_db.update(_db.classes)..where((c) => c.id.equals(classId))).write(
+          ClassesCompanion(deletedAt: Value(DateTime.now())),
+        );
+  }
+
+  @override
   Future<List<EnrolledStudent>> listEnrolledStudentsByClass(int classId) async {
     final query = _db.select(_db.users).join([
       innerJoin(

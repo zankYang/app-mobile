@@ -49,5 +49,7 @@
 		<true/>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
+		<key>NSCameraUsageDescription</key>
+		<string>La cámara se usa para escanear códigos QR de asistencia</string>
 	</dict>
 </plist>

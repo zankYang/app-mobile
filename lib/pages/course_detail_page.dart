@@ -12,6 +12,7 @@ class CourseDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final courseId = ref.watch(selectedCourseIdProvider);
+    final currentUser = ref.watch(currentUserProvider);
     if (courseId == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Curso')),
@@ -32,8 +33,20 @@ class CourseDetailPage extends ConsumerWidget {
           );
         }
         final course = snapshot.data!;
+        final canDelete = currentUser?.isTeacher == true &&
+            course.teacherUserId == currentUser?.id;
         return Scaffold(
-          appBar: AppBar(title: Text(course.name)),
+          appBar: AppBar(
+            title: Text(course.name),
+            actions: [
+              if (canDelete)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: 'Eliminar curso',
+                  onPressed: () => _confirmDelete(context, ref, course.id, currentUser!.id),
+                ),
+            ],
+          ),
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -178,5 +191,51 @@ class CourseDetailPage extends ConsumerWidget {
       return 'Fin: ${_formatDate(course.endDate!)}';
     }
     return '';
+  }
+
+  static Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    int classId,
+    int teacherUserId,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar curso'),
+        content: const Text(
+          '¿Estás seguro de que deseas eliminar este curso? Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await ref.read(classesRepositoryProvider).deleteClass(
+            classId: classId,
+            teacherUserId: teacherUserId,
+          );
+      ref.invalidate(teacherCoursesProvider);
+      ref.read(selectedCourseIdProvider.notifier).state = null;
+      if (!context.mounted) return;
+      context.router.maybePop();
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al eliminar: $e')),
+      );
+    }
   }
 }

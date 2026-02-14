@@ -114,6 +114,36 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
   }
 
   @override
+  Future<QrMarkResult> markPresentByQR({
+    required int sessionId,
+    required int studentUserId,
+  }) async {
+    final sessionRow = await (_db.select(_db.classSessions)
+          ..where((s) => s.id.equals(sessionId)))
+        .getSingleOrNull();
+    if (sessionRow == null) {
+      return const QrMarkFailure('Sesión no encontrada');
+    }
+
+    final enrollmentRow = await (_db.select(_db.enrollments)
+          ..where((e) =>
+              e.studentUserId.equals(studentUserId) &
+              e.classId.equals(sessionRow.classId) &
+              e.droppedAt.isNull()))
+        .getSingleOrNull();
+    if (enrollmentRow == null) {
+      return const QrMarkFailure('No estás inscrito en esta clase');
+    }
+
+    await setAttendance(
+      sessionId: sessionId,
+      enrollmentId: enrollmentRow.id,
+      status: 'present',
+    );
+    return const QrMarkSuccess();
+  }
+
+  @override
   Future<AttendanceReport> getAttendanceReport(int classId) async {
     final sessions = await listSessionsByClass(classId);
     final enrollments = await listEnrollmentsWithStudentByClass(classId);

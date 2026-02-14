@@ -22,6 +22,13 @@ class UnderConstructionPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(displayName),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            tooltip: 'Registrar asistencia con QR',
+            onPressed: () => context.router.push(const QrScanRoute()),
+          ),
+        ],
         leading: Builder(
           builder: (ctx) => IconButton(
             icon: const Icon(Icons.menu),
@@ -259,6 +266,15 @@ class _StudentDrawer extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).pop();
                       parentContext.router.push(const EnrolledCoursesRoute());
+                    },
+                  ),
+                  AppDrawerTile(
+                    icon: Icons.qr_code_scanner,
+                    title: 'Registrar asistencia',
+                    subtitle: 'Escanear QR del profesor',
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      parentContext.router.push(const QrScanRoute());
                     },
                   ),
                   const Padding(

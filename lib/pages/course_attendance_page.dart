@@ -7,6 +7,7 @@ import 'package:proyecto_final/domain/entities/create_session_result.dart';
 import 'package:proyecto_final/domain/entities/course.dart';
 import 'package:proyecto_final/domain/entities/enrollment_with_student.dart';
 import 'package:proyecto_final/domain/entities/session.dart';
+import 'package:proyecto_final/routes/app_router.dart';
 
 @RoutePage()
 class CourseAttendancePage extends ConsumerStatefulWidget {
@@ -167,9 +168,28 @@ class _CourseAttendancePageState extends ConsumerState<CourseAttendancePage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 24),
-        Text(
-          'Alumnos',
-          style: Theme.of(context).textTheme.titleMedium,
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Alumnos',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: selectedSession != null
+                  ? () => context.router.push(
+                        QrGeneratorRoute(
+                          sessionId: selectedSession.id,
+                          sessionAt: selectedSession.sessionAt,
+                          courseName: course.name,
+                        ),
+                      )
+                  : null,
+              icon: const Icon(Icons.qr_code_2),
+              label: const Text('Mostrar QR'),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         enrollmentsAsync.when(

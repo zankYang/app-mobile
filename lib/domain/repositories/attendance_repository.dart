@@ -30,4 +30,25 @@ abstract class AttendanceRepository {
 
   /// Reporte completo de asistencia del curso (sesiones, alumnos, estado por sesión).
   Future<AttendanceReport> getAttendanceReport(int classId);
+
+  /// Marca al alumno como presente por QR (cambia inasistencia a asistencia).
+  /// Solo funciona si el alumno está inscrito en la clase de la sesión.
+  Future<QrMarkResult> markPresentByQR({
+    required int sessionId,
+    required int studentUserId,
+  });
+}
+
+/// Resultado de marcar asistencia por QR.
+sealed class QrMarkResult {
+  const QrMarkResult();
+}
+
+class QrMarkSuccess extends QrMarkResult {
+  const QrMarkSuccess();
+}
+
+class QrMarkFailure extends QrMarkResult {
+  final String message;
+  const QrMarkFailure(this.message);
 }
